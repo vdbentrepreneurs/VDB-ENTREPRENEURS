@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { auth, db } from './firebase';
 import { signOut } from 'firebase/auth';
-import { collection, addDoc, serverTimestamp, onSnapshot, query, orderBy, deleteDoc, doc, getDoc, setDoc } from 'firebase/firestore';
-import { LogOut, User as UserIcon, UserPlus, Trash2, Store, Lock, Fingerprint, Loader2, CheckCircle2 } from 'lucide-react';
+import { collection, addDoc, serverTimestamp, onSnapshot, query, orderBy, deleteDoc, doc, getDoc, setDoc, getDocs } from 'firebase/firestore';
+import { LogOut, User as UserIcon, UserPlus, Trash2, Store, Lock, Fingerprint, Loader2, CheckCircle2, AlertTriangle, MoreVertical, Eye, EyeOff } from 'lucide-react';
 import './App.css';
 
 const Profile = () => {
@@ -23,6 +23,16 @@ const Profile = () => {
   const [useBiometrics, setUseBiometrics] = useState(false);
   const [isEnablingBiometrics, setIsEnablingBiometrics] = useState(false);
   const [showBiometricsSuccess, setShowBiometricsSuccess] = useState(false);
+
+  const [showWipeModal, setShowWipeModal] = useState(false);
+  const [wipePassword, setWipePassword] = useState('');
+  const [wipeError, setWipeError] = useState('');
+  const [isWiping, setIsWiping] = useState(false);
+  const [wipeStep, setWipeStep] = useState('');
+  const [showMenu, setShowMenu] = useState(false);
+  const [wipeComplete, setWipeComplete] = useState(false);
+  const [showWipePassword, setShowWipePassword] = useState(false);
+  const [showWipeConfirm, setShowWipeConfirm] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -82,6 +92,55 @@ const Profile = () => {
 
   const handleLogout = () => {
     signOut(auth);
+  };
+
+  const handleWipeDataClick = () => {
+    setShowWipeConfirm(true);
+  };
+
+  const executeWipeData = async () => {
+    if (wipePassword !== 'sathishappa@04') {
+      setWipeError('Incorrect password');
+      return;
+    }
+    
+    setWipeError('');
+    setIsWiping(true);
+    
+    try {
+      setWipeStep('Clearing Bills...');
+      let snapshot = await getDocs(query(collection(db, 'bills')));
+      for (const d of snapshot.docs) await deleteDoc(doc(db, 'bills', d.id));
+      await new Promise(r => setTimeout(r, 600));
+
+      setWipeStep('Clearing Credits...');
+      snapshot = await getDocs(query(collection(db, 'credits')));
+      for (const d of snapshot.docs) await deleteDoc(doc(db, 'credits', d.id));
+      await new Promise(r => setTimeout(r, 600));
+
+      setWipeStep('Clearing Debts...');
+      snapshot = await getDocs(query(collection(db, 'debts')));
+      for (const d of snapshot.docs) await deleteDoc(doc(db, 'debts', d.id));
+      await new Promise(r => setTimeout(r, 600));
+
+      setWipeStep('Clearing Cash History...');
+      snapshot = await getDocs(query(collection(db, 'cash_history')));
+      for (const d of snapshot.docs) await deleteDoc(doc(db, 'cash_history', d.id));
+      await new Promise(r => setTimeout(r, 600));
+
+      setWipeStep('Clearing Shops...');
+      snapshot = await getDocs(query(collection(db, 'shops')));
+      for (const d of snapshot.docs) await deleteDoc(doc(db, 'shops', d.id));
+      await new Promise(r => setTimeout(r, 600));
+
+      setWipeStep('Data successfully cleared!');
+      setWipeComplete(true);
+      
+    } catch (error) {
+      console.error(error);
+      setWipeError('Error clearing data');
+      setIsWiping(false);
+    }
   };
 
   const handleAddShop = async () => {
@@ -175,10 +234,32 @@ const Profile = () => {
   };
 
   return (
-    <div className="dashboard-container">
-      <div>
-        <h2 className="section-title">Profile</h2>
-        <p className="sub-title">Manage your account</p>
+    <div className="dashboard-container" onClick={() => setShowMenu(false)}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div>
+          <h2 className="section-title">Profile</h2>
+          <p className="sub-title">Manage your account</p>
+        </div>
+        <div style={{ position: 'relative' }}>
+          <button 
+            onClick={(e) => { e.stopPropagation(); setShowMenu(!showMenu); }}
+            style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '8px', color: 'var(--text-main)' }}
+          >
+            <MoreVertical size={24} />
+          </button>
+          
+          {showMenu && (
+            <div style={{ position: 'absolute', top: '100%', right: 0, backgroundColor: 'var(--surface)', borderRadius: '8px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', minWidth: '150px', zIndex: 100, border: '1px solid var(--border-color)', overflow: 'hidden' }}>
+              <button 
+                onClick={(e) => { e.stopPropagation(); setShowMenu(false); handleWipeDataClick(); }}
+                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 16px', background: 'transparent', border: 'none', color: 'var(--danger)', cursor: 'pointer', textAlign: 'left', fontSize: '0.95rem', fontWeight: '500' }}
+              >
+                <Trash2 size={16} />
+                Wipe Data
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="metric-card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '32px' }}>
@@ -276,6 +357,8 @@ const Profile = () => {
           </div>
         </div>
       </div>
+
+
 
       <div style={{ marginTop: '24px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
@@ -395,6 +478,112 @@ const Profile = () => {
                 {pinMode === 'set' || pinMode === 'reset' ? 'Save PIN' : pinMode === 'remove' ? 'Remove' : 'Verify'}
               </button>
             </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {showWipeConfirm && createPortal(
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, padding: '24px' }}>
+          <div style={{ backgroundColor: 'var(--surface)', padding: '24px', borderRadius: 'var(--radius)', width: '100%', maxWidth: '350px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+            <AlertTriangle size={48} color="var(--danger)" style={{ marginBottom: '16px' }} />
+            <h3 style={{ margin: '0 0 12px 0', fontSize: '1.2rem', color: 'var(--text-main)' }}>Confirm Action</h3>
+            <p style={{ color: 'var(--text-muted)', marginBottom: '24px', fontSize: '1rem', lineHeight: '1.5' }}>
+              Your data will be deleted from the database and removed from the database. Are you sure you want to proceed?
+            </p>
+            <div style={{ display: 'flex', gap: '12px', width: '100%' }}>
+              <button 
+                onClick={() => setShowWipeConfirm(false)}
+                className="action-btn" 
+                style={{ flex: 1, backgroundColor: 'transparent', border: '1px solid var(--border-color)', color: 'var(--text-main)' }}
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={() => { setShowWipeConfirm(false); setShowWipeModal(true); }}
+                className="action-btn" 
+                style={{ flex: 1, backgroundColor: 'var(--danger)', color: 'white' }}
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {showWipeModal && createPortal(
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000, padding: '24px' }}>
+          <div style={{ backgroundColor: 'var(--surface)', padding: '32px 24px', borderRadius: 'var(--radius)', width: '100%', maxWidth: '350px', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
+            <AlertTriangle size={48} color="var(--danger)" style={{ marginBottom: '16px' }} />
+            <h3 style={{ margin: '0 0 8px 0', fontSize: '1.4rem', color: 'var(--danger)' }}>Wipe All Data</h3>
+            
+            {isWiping ? (
+              <div style={{ margin: '24px 0', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                {wipeComplete ? (
+                  <>
+                    <div style={{ marginBottom: '16px', color: 'var(--success)', animation: 'scaleIn 0.5s ease-out' }}>
+                      <CheckCircle2 size={64} />
+                    </div>
+                    <p style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--success)', margin: '0 0 24px 0' }}>{wipeStep}</p>
+                    <button 
+                      onClick={() => { setShowWipeModal(false); setIsWiping(false); setWipeComplete(false); setWipePassword(''); }}
+                      className="action-btn" 
+                      style={{ backgroundColor: 'var(--primary-color)', color: 'white', padding: '12px 32px' }}
+                    >
+                      Continue
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <Loader2 size={40} className="spinner" style={{ marginBottom: '16px', color: 'var(--danger)' }} />
+                    <p style={{ fontSize: '1.1rem', fontWeight: '500', color: 'var(--text-main)', margin: 0 }}>{wipeStep}</p>
+                  </>
+                )}
+              </div>
+            ) : (
+              <>
+                <p style={{ color: 'var(--text-muted)', marginBottom: '24px', fontSize: '0.95rem', lineHeight: '1.5' }}>
+                  This action cannot be undone. Please enter the master password to confirm wiping all data.
+                </p>
+                <div style={{ position: 'relative', width: '100%', marginBottom: '16px' }}>
+                  <input 
+                    type={showWipePassword ? "text" : "password"} 
+                    placeholder="Master Password" 
+                    value={wipePassword}
+                    onChange={(e) => setWipePassword(e.target.value)}
+                    className="form-input"
+                    style={{ textAlign: 'center', fontSize: '1.1rem', padding: '12px', paddingRight: '40px', width: '100%', boxSizing: 'border-box' }}
+                    autoFocus
+                  />
+                  <button 
+                    type="button"
+                    onClick={() => setShowWipePassword(!showWipePassword)}
+                    style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}
+                  >
+                    {showWipePassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  </button>
+                </div>
+                {wipeError && <p style={{ color: 'var(--danger)', margin: '0 0 16px 0', fontSize: '0.9rem', fontWeight: 'bold' }}>{wipeError}</p>}
+                
+                <div style={{ display: 'flex', gap: '12px', width: '100%' }}>
+                  <button 
+                    onClick={() => { setShowWipeModal(false); setWipePassword(''); setWipeError(''); }}
+                    className="action-btn" 
+                    style={{ flex: 1, backgroundColor: 'transparent', border: '1px solid var(--border-color)', color: 'var(--text-main)' }}
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    onClick={executeWipeData}
+                    className="action-btn" 
+                    style={{ flex: 1, backgroundColor: 'var(--danger)', color: 'white' }}
+                  >
+                    Confirm Wipe
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>,
         document.body

@@ -16,6 +16,10 @@ export default function Reports() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
   const [chartData, setChartData] = useState([]);
+  const [rawStats, setRawStats] = useState({
+    expenses: { max: 0, min: 0, avg: 0 },
+    credit: { max: 0, min: 0, avg: 0 }
+  });
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -103,6 +107,9 @@ export default function Reports() {
       return { year: d.getFullYear(), month: d.getMonth(), day: d.getDate() };
     };
 
+    const rawExpenses = [];
+    const rawCredits = [];
+
     if (timeFilter === 'daily') {
       for (let i = 6; i >= 0; i--) {
         const d = new Date();
@@ -116,16 +123,18 @@ export default function Reports() {
         });
       }
       
-      const process = (item, type) => {
+      const process = (item, type, rawArr) => {
         if (!item.date) return;
         const dayObj = newData.find(d => d.dateStr === item.date);
         if (dayObj) {
-          dayObj[type] += Number(item.amount) || 0;
+          const amt = Number(item.amount) || 0;
+          dayObj[type] += amt;
+          rawArr.push(amt);
         }
       };
       
-      bills.forEach(b => process(b, 'expenses'));
-      credits.forEach(c => process(c, 'credit'));
+      bills.forEach(b => process(b, 'expenses', rawExpenses));
+      credits.forEach(c => process(c, 'credit', rawCredits));
     } 
     else if (timeFilter === 'weekly') {
       newData = [
@@ -140,27 +149,31 @@ export default function Reports() {
         if (day <= 21) return 2;
         return 3;
       };
-      const process = (item, type) => {
+      const process = (item, type, rawArr) => {
         const { year, month, day } = parseDateStr(item.date);
         if (month === currentMonth && year === currentYear) {
-          newData[getWeekOfMonth(day)][type] += Number(item.amount) || 0;
+          const amt = Number(item.amount) || 0;
+          newData[getWeekOfMonth(day)][type] += amt;
+          rawArr.push(amt);
         }
       };
-      bills.forEach(b => process(b, 'expenses'));
-      credits.forEach(c => process(c, 'credit'));
+      bills.forEach(b => process(b, 'expenses', rawExpenses));
+      credits.forEach(c => process(c, 'credit', rawCredits));
     }
     else if (timeFilter === 'monthly') {
       const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
       newData = monthNames.map(m => ({ name: m, expenses: 0, credit: 0 }));
       
-      const process = (item, type) => {
+      const process = (item, type, rawArr) => {
         const { year, month } = parseDateStr(item.date);
         if (year === currentYear) {
-          newData[month][type] += Number(item.amount) || 0;
+          const amt = Number(item.amount) || 0;
+          newData[month][type] += amt;
+          rawArr.push(amt);
         }
       };
-      bills.forEach(b => process(b, 'expenses'));
-      credits.forEach(c => process(c, 'credit'));
+      bills.forEach(b => process(b, 'expenses', rawExpenses));
+      credits.forEach(c => process(c, 'credit', rawCredits));
     }
     else if (timeFilter === 'yearly') {
       for (let i = 4; i >= 0; i--) {
@@ -171,34 +184,41 @@ export default function Reports() {
           credit: 0
         });
       }
-      const process = (item, type) => {
+      const process = (item, type, rawArr) => {
         const { year } = parseDateStr(item.date);
         const yearObj = newData.find(y => y.year === year);
         if (yearObj) {
-          yearObj[type] += Number(item.amount) || 0;
+          const amt = Number(item.amount) || 0;
+          yearObj[type] += amt;
+          rawArr.push(amt);
         }
       };
-      bills.forEach(b => process(b, 'expenses'));
-      credits.forEach(c => process(c, 'credit'));
+      bills.forEach(b => process(b, 'expenses', rawExpenses));
+      credits.forEach(c => process(c, 'credit', rawCredits));
     }
     
     setChartData(newData);
+
+    const calc = (arr) => {
+      if (arr.length === 0) return { max: 0, min: 0, avg: 0 };
+      return {
+        max: Math.max(...arr),
+        min: Math.min(...arr),
+        avg: Math.round(arr.reduce((a, b) => a + b, 0) / arr.length)
+      };
+    };
+
+    setRawStats({
+      expenses: calc(rawExpenses),
+      credit: calc(rawCredits)
+    });
   }, [bills, credits, timeFilter]);
 
   const totalExpenses = chartData.reduce((sum, item) => sum + item.expenses, 0);
   const totalCredit = chartData.reduce((sum, item) => sum + item.credit, 0);
 
-  const calculateStats = (dataKey) => {
-    if (chartData.length === 0) return { max: 0, min: 0, avg: 0 };
-    const values = chartData.map(d => d[dataKey]);
-    const max = Math.max(...values);
-    const min = Math.min(...values);
-    const avg = values.reduce((a, b) => a + b, 0) / values.length;
-    return { max, min, avg: Math.round(avg) };
-  };
-
-  const expStats = calculateStats('expenses');
-  const credStats = calculateStats('credit');
+  const expStats = rawStats.expenses;
+  const credStats = rawStats.credit;
 
   const handleDownloadPdf = () => {
     const element = document.getElementById('reports-content');
