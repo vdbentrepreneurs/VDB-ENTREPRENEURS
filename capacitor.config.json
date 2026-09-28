@@ -1,0 +1,12 @@
+{
+  "appId": "com.vdb.entrepreneurs",
+  "appName": "VDB ENTREPRENEURS",
+  "webDir": "dist",
+  "plugins": {
+    "GoogleAuth": {
+      "scopes": ["profile", "email"],
+      "serverClientId": "471668083493-jhsr9ag19ko1rnr99ateerk240mj70h8.apps.googleusercontent.com",
+      "forceCodeForRefreshToken": true
+    }
+  }
+}

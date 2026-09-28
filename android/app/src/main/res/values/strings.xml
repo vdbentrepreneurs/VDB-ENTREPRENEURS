@@ -1,0 +1,8 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">VDB ENTREPRENEURS</string>
+    <string name="title_activity_main">VDB ENTREPRENEURS</string>
+    <string name="package_name">com.vdb.entrepreneurs</string>
+    <string name="custom_url_scheme">com.vdb.entrepreneurs</string>
+    <string name="server_client_id">471668083493-jhsr9ag19ko1rnr99ateerk240mj70h8.apps.googleusercontent.com</string>
+</resources>

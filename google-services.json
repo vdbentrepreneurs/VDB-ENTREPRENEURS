@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "471668083493",
+    "project_id": "vdb-entrepreneurs",
+    "storage_bucket": "vdb-entrepreneurs.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:471668083493:android:953771a2bea7d1c762e8cc",
+        "android_client_info": {
+          "package_name": "com.vdb.entrepreneurs"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "471668083493-4s7t9bhcio9946vbo08ukouje1i6onfb.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.vdb.entrepreneurs",
+            "certificate_hash": "75212a91cdec4a27d4b1fd9e209b777aa0316252"
+          }
+        },
+        {
+          "client_id": "471668083493-jhsr9ag19ko1rnr99ateerk240mj70h8.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBztp9NRb_Fk6gsNHDyp5RMh95GWAIAe3o"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "471668083493-jhsr9ag19ko1rnr99ateerk240mj70h8.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
